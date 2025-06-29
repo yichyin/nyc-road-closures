@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manhattan Road Closures</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        #header {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+        #map { height: 100%; width: 100%; }
+        .leaflet-popup-content-wrapper {
+            border-radius: 5px;
+        }
+        .leaflet-popup-content {
+            font-size: 14px;
+        }
+        .popup-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+</head>
+<body>
+
+    <div id="header">
+        <h1>Manhattan Road Closures</h1>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+
+    <script>
+        // 1. Initialize the map
+        const map = L.map('map').setView([40.758896, -73.985130], 14); // Zoomed in a bit more
+
+        // 2. Add a tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 3. MOCK DATA (Updated for Polylines)
+        // Note the new 'path' property, which is an array of [lat, lng] pairs.
+        const mockClosures = [
+            {
+                street: "Broadway",
+                crossStreets: "between 42nd St and 47th St",
+                closureTimes: "9 am to 11 pm",
+                reason: "Times Square Pedestrian Plaza",
+                // Path of Broadway from 42nd to 47th
+                path: [
+                    [40.7558, -73.9869], // Broadway & 42nd
+                    [40.7590, -73.9845]  // Broadway & 47th
+                ]
+            },
+            {
+                street: "St. Marks Place",
+                crossStreets: "between 2nd Ave and 3rd Ave",
+                closureTimes: "Weekends, 12 pm to 12 am",
+                reason: "Weekend Walk",
+                // Path of St. Marks between 2nd and 3rd Ave
+                path: [
+                    [40.7292, -73.9880], // St. Marks & 2nd Ave
+                    [40.7288, -73.9897]  // St. Marks & 3rd Ave
+                ]
+            }
+        ];
+
+        // 4. Process the mock data and add polylines to the map
+        mockClosures.forEach(closure => {
+            // Create the polyline using the path data
+            const polyline = L.polyline(closure.path, {
+                color: 'red',     // Color of the closure line
+                weight: 5,        // Thickness of the line
+                opacity: 0.8      // Opacity of the line
+            }).addTo(map);
+
+            // Create the HTML content for the popup
+            const popupContent = `
+                <div class="popup-title">${closure.street}</div>
+                <b>Where:</b> ${closure.crossStreets}<br>
+                <b>When:</b> ${closure.closureTimes}<br>
+                <b>Reason:</b> ${closure.reason}
+            `;
+
+            polyline.bindPopup(popupContent);
+        });
+
+    </script>
+
+</body>
+</html>
