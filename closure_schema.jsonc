@@ -1,0 +1,19 @@
+{
+  "events": [
+    {
+      "eventName": "String",
+      "eventDate": "YYYY-MM-DD",
+      "closures": [
+        {
+          "type": "String (e.g., Formation, Route, Dispersal, Embargo, Miscellaneous)",
+          "streets": [
+            {
+                "startLocation": "String (e.g., '5th Avenue & 33rd Street, New York, NY')",
+                "endLocation": "String (e.g., '5th Avenue & 25th Street, New York, NY')"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
