@@ -11,6 +11,9 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+import { GoogleGenAI } from '@google/genai';
+import { SYSTEM_INSTRUCTIONS } from './constants';
+
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		const DOT_TRAFFIC_URL = 'https://www.nyc.gov/html/dot/html/motorist/weektraf.shtml'
@@ -18,17 +21,29 @@ export default {
 		console.log('Fetching DOT traffic data from:', DOT_TRAFFIC_URL)
 
 		try {
-			const response = await fetch(DOT_TRAFFIC_URL);
+			const response = await fetch(DOT_TRAFFIC_URL, {
+				headers: {
+					'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+					'Accept-Charset': 'utf-8',
+					'User-Agent': 'Mozilla/5.0 (compatible; NYC Traffic Parser)'
+				}
+			});
 
 			if (!response.ok) {
 				throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
 			}
 
-			const html = await response.text();
+			// Ensure proper UTF-8 decoding
+			const buffer = await response.arrayBuffer();
+			const html = new TextDecoder('utf-8').decode(buffer);
             const manhattanSection = extractSectionFromHeader(html, 'manhattan');
 
-			return new Response(manhattanSection, {
-				headers: {'Content-Type': 'text/html'}
+			const closuresDataJson = await callGeminiAPI(env.GEMINI_API_KEY, manhattanSection);
+
+			return new Response(closuresDataJson, {
+				headers: {
+					'Content-Type': 'application/json; charset=utf-8'
+				}
 			});
 		} catch (error) {
 			console.error('Error fetching DOT traffic data:', error);
@@ -62,4 +77,65 @@ function extractSectionFromHeader(html: string, startId: string): string {
     
     // Extract the content between the headers
     return html.slice(startIndex, endIndex).trim();
+}
+
+// Call Gemini API to get structured data of the closures
+async function callGeminiAPI(apiKey: string, input: string): Promise<any> {
+	if (!apiKey) {
+		throw new Error('Gemini API key is not set');
+	}
+
+	const ai = new GoogleGenAI({apiKey: apiKey});
+
+	const response = await ai.models.generateContent({
+		model: "gemini-2.5-flash",
+		contents: input,
+		config: {
+			systemInstruction: SYSTEM_INSTRUCTIONS,
+			// thinkingConfig: {
+			// 	thinkingBudget: 0, // disable thinking
+			// },
+			responseMimeType: "application/json",
+			responseSchema: {
+				type: "object",
+				properties: {
+					events: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: {
+								eventName: { type: "string" },
+								eventDate: { type: "string" },
+								closures: {
+									type: "array",
+									items: {
+										type: "object",
+										properties: {
+											type: { type: "string" },
+											streets: {
+												type: "array",
+												items: {
+													type: "object",
+													properties: {
+														startLocation: { type: "string" },
+														endLocation: { type: "string" }
+													},
+													required: ["startLocation", "endLocation"]
+												}
+											}
+										},
+										required: ["type", "streets"]
+									}
+								}
+							},
+							required: ["eventName", "eventDate", "closures"]
+						}
+					}
+				},
+				required: ["events"]
+			}
+		}
+	})
+
+	return response.text
 }
