@@ -41,9 +41,15 @@ export default {
 			// Transform the HTML section into a structured JSON format using Gemini API
 			const closuresJson = await callGeminiAPI(env.GEMINI_API_KEY, manhattanSection);
 
-			// Save to R2 bucket
+			// Geo-code the closure locations and add coordinates to the existing structure
+			const geocodedJson = await geocodeClosures(env.GOOGLE_MAPS_API_KEY, closuresJson);
+
+			// Save geocoded data to R2 bucket
 			const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-			await env.nyc_traffic_alerts.put(`manhattan/${currentDate}.json`, closuresJson);
+			await env.nyc_traffic_alerts.put(`manhattan/${currentDate}.json`, geocodedJson);
+			
+			const parsedData = JSON.parse(geocodedJson);
+			console.log(`Processed ${parsedData.events.length} events with geocoding complete`);
 
 			return new Response('DOT traffic data processed and saved successfully', { status: 200 });
 		} catch (error) {
@@ -139,4 +145,91 @@ async function callGeminiAPI(apiKey: string, input: string): Promise<any> {
 	})
 
 	return response.text
+}
+
+// Geocode all locations in the closures JSON
+async function geocodeClosures(apiKey: string, closuresJsonStr: string): Promise<string> {
+	if (!apiKey) {
+		console.warn('Google Maps API key is not set, skipping geocoding');
+		return closuresJsonStr; // Return original data without geocoding
+	}
+
+	const closuresData = JSON.parse(closuresJsonStr);
+	let geocodedCount = 0;
+	let failedCount = 0;
+	
+	for (const event of closuresData.events) {
+		for (const closure of event.closures) {
+			for (const street of closure.streets) {
+				const startCoords = await geocodeAddress(apiKey, street.startLocation);
+				if (!startCoords) {
+					failedCount++;
+					continue;
+				}
+				
+				const endCoords = await geocodeAddress(apiKey, street.endLocation);
+				if (!endCoords) {
+					failedCount++;
+					continue;
+				}
+
+				street.startLat = startCoords.lat;
+				street.startLng = startCoords.lng;
+				street.endLat = endCoords.lat;
+				street.endLng = endCoords.lng;
+				geocodedCount++;
+				
+				// Add delay to avoid rate limiting
+				await new Promise(resolve => setTimeout(resolve, 100));
+			}
+		}
+	}
+	
+	console.log(`Geocoding complete: ${geocodedCount} successful, ${failedCount} failed`);
+	return JSON.stringify(closuresData, null, 2);
+}
+
+// Geocode a single address using Google Maps Geocoding API
+async function geocodeAddress(apiKey: string, address: string): Promise<{lat: number, lng: number} | null> {
+	try {
+		const encodedAddress = encodeURIComponent(address);
+		const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
+		
+		const response = await fetch(url);
+		
+		if (!response.ok) {
+			console.error(`HTTP error for address ${address}: ${response.status} ${response.statusText}`);
+			return null;
+		}
+		
+		const data = await response.json() as {
+			status: string;
+			error_message?: string;
+			results: Array<{
+				geometry: {
+					location: {
+						lat: number;
+						lng: number;
+					}
+				}
+			}>;
+		};
+		
+		if (data.status === 'OK' && data.results.length > 0) {
+			const location = data.results[0].geometry.location;
+			return {
+				lat: location.lat,
+				lng: location.lng
+			};
+		} else {
+			console.warn(`Geocoding failed for address: ${address}`, {
+				status: data.status,
+				error: data.error_message || 'No error message'
+			});
+			return null;
+		}
+	} catch (error) {
+		console.error(`Error geocoding address: ${address}`, error);
+		return null;
+	}
 }
