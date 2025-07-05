@@ -38,13 +38,14 @@ export default {
 			const html = new TextDecoder('utf-8').decode(buffer);
             const manhattanSection = extractSectionFromHeader(html, 'manhattan');
 
-			const closuresDataJson = await callGeminiAPI(env.GEMINI_API_KEY, manhattanSection);
+			// Transform the HTML section into a structured JSON format using Gemini API
+			const closuresJson = await callGeminiAPI(env.GEMINI_API_KEY, manhattanSection);
 
-			return new Response(closuresDataJson, {
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8'
-				}
-			});
+			// Save to R2 bucket
+			const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+			await env.nyc_traffic_alerts.put(`manhattan/${currentDate}.json`, closuresJson);
+
+			return new Response('DOT traffic data processed and saved successfully', { status: 200 });
 		} catch (error) {
 			console.error('Error fetching DOT traffic data:', error);
 			const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
