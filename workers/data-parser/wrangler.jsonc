@@ -7,6 +7,11 @@
 	"name": "data-parser",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-06-28",
+	"triggers": {
+		"crons": [
+			"0 10 * * SAT" // Every Saturday at 10 AM UTC
+		]
+	},
 	"observability": {
 		"enabled": true
 	},

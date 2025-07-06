@@ -15,7 +15,7 @@ import { GoogleGenAI } from '@google/genai';
 import { SYSTEM_INSTRUCTIONS } from './constants';
 
 export default {
-	async fetch(request, env, ctx): Promise<Response> {
+	async scheduled(controller, env, ctx): Promise<Response> {
 		const DOT_TRAFFIC_URL = 'https://www.nyc.gov/html/dot/html/motorist/weektraf.shtml'
 
 		console.log('Fetching DOT traffic data from:', DOT_TRAFFIC_URL)
