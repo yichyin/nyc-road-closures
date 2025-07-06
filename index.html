@@ -36,6 +36,28 @@
             font-size: 16px;
             margin-bottom: 5px;
         }
+        .leaflet-tooltip {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            line-height: 1.4;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .leaflet-tooltip-top:before {
+            border-top-color: rgba(0, 0, 0, 0.9);
+        }
+        .leaflet-tooltip-bottom:before {
+            border-bottom-color: rgba(0, 0, 0, 0.9);
+        }
+        .leaflet-tooltip-left:before {
+            border-left-color: rgba(0, 0, 0, 0.9);
+        }
+        .leaflet-tooltip-right:before {
+            border-right-color: rgba(0, 0, 0, 0.9);
+        }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -158,21 +180,46 @@
                         [street.startLat, street.startLng],
                         [street.endLat, street.endLng]
                     ], {
-                        color: 'red',
-                        weight: 5,
-                        opacity: 0.8
+                        color: '#ff4444',
+                        weight: 6,
+                        opacity: 0.9,
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                        dashArray: '10, 5'
                     }).addTo(map);
 
-                    // Create the HTML content for the popup
-                    const popupContent = `
-                        <div class="popup-title">${event.eventName}</div>
-                        <b>From:</b> ${street.startLocation}<br>
-                        <b>To:</b> ${street.endLocation}<br>
-                        <b>Date:</b> ${event.eventDate}<br>
-                        <b>Type:</b> ${closure.type}
+                    // Create the HTML content for the tooltip
+                    const tooltipContent = `
+                        <div style="font-weight: bold; margin-bottom: 4px;">${event.eventName}</div>
+                        <div style="margin-bottom: 2px;"><strong>From:</strong> ${street.startLocation}</div>
+                        <div style="margin-bottom: 2px;"><strong>To:</strong> ${street.endLocation}</div>
+                        <div style="margin-bottom: 2px;"><strong>Date:</strong> ${event.eventDate}</div>
+                        <div><strong>Type:</strong> ${closure.type}</div>
                     `;
 
-                    polyline.bindPopup(popupContent);
+                    polyline.bindTooltip(tooltipContent, {
+                        permanent: false,
+                        direction: 'top',
+                        offset: [0, -10],
+                        opacity: 1
+                    });
+
+                    // Add hover effects
+                    polyline.on('mouseover', function(e) {
+                        this.setStyle({
+                            weight: 8,
+                            opacity: 1,
+                            color: '#ff2222'
+                        });
+                    });
+
+                    polyline.on('mouseout', function(e) {
+                        this.setStyle({
+                            weight: 6,
+                            opacity: 0.9,
+                            color: '#ff4444'
+                        });
+                    });
                 });
             });
         });
