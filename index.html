@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manhattan Road Closures</title>
+    <title id="page-title">Manhattan Road Closures</title>
     <style>
         body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         #header {
@@ -11,6 +11,18 @@
             color: white;
             padding: 10px 20px;
             text-align: center;
+        }
+        #header .subtitle {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #ccc;
+        }
+        #header .subtitle a {
+            color: #ccc;
+            text-decoration: none;
+        }
+        #header .subtitle a:hover {
+            text-decoration: underline;
         }
         #map { height: 100%; width: 100%; }
         .leaflet-popup-content-wrapper {
@@ -33,6 +45,8 @@
 
     <div id="header">
         <h1>Manhattan Road Closures</h1>
+        <p id="date-range" class="subtitle"></p>
+        <p class="subtitle">Data source: <a href="https://www.nyc.gov/html/dot/html/motorist/weektraf.shtml#manhattan" target="_blank">NYC DOT Weekly Traffic Advisory</a></p>
     </div>
     <div id="map"></div>
 
@@ -41,6 +55,47 @@
      crossorigin=""></script>
 
     <script>
+        // Calculate dynamic date range
+        function getWeekRange() {
+            const today = new Date();
+            const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            
+            // Find the Saturday before or on current date
+            const daysToSaturday = currentDay === 6 ? 0 : (currentDay + 1) % 7;
+            const saturday = new Date(today);
+            saturday.setDate(today.getDate() - daysToSaturday);
+            
+            // Find the Friday after Saturday
+            const friday = new Date(saturday);
+            friday.setDate(saturday.getDate() + 6);
+            
+            return { saturday, friday };
+        }
+
+        function formatDate(date) {
+            const options = { 
+                weekday: 'long', 
+                month: 'long', 
+                day: 'numeric', 
+                year: 'numeric' 
+            };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        function formatDateShort(date) {
+            const options = { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        // Set dynamic dates
+        const { saturday, friday } = getWeekRange();
+        const dateRangeText = `${formatDate(saturday)} to ${formatDate(friday)}`;
+        document.getElementById('date-range').textContent = dateRangeText;
+
         // Embedded JSON data
         const closuresData = {
             "events": [
