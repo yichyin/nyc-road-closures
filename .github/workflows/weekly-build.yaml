@@ -21,7 +21,8 @@ jobs:
         
     - name: Install dependencies
       run: |
-        npm install -g @aws-sdk/client-s3
+        npm init -y
+        npm install @aws-sdk/client-s3
         
     - name: Create update script
       run: |
