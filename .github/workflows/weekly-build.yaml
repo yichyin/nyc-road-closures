@@ -6,6 +6,9 @@ on:
     # Run every Saturday at 8 AM ET (12 PM UTC)
     - cron: '0 12 * * 6'
 
+permissions:
+  contents: write
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
