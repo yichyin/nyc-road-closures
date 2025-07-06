@@ -41,8 +41,52 @@
      crossorigin=""></script>
 
     <script>
+        // Embedded JSON data
+        const closuresData = {
+            "events": [
+                {
+                    "closures": [
+                        {
+                            "streets": [
+                                {
+                                    "endLocation": "3rd Avenue & 6th Street, New York, NY",
+                                    "startLocation": "3rd Avenue & 14th Street, New York, NY",
+                                    "startLat": 40.7332854,
+                                    "startLng": -73.9871982,
+                                    "endLat": 40.7283704,
+                                    "endLng": -73.99084789999999
+                                }
+                            ],
+                            "type": "Miscellaneous"
+                        }
+                    ],
+                    "eventDate": "2025-07-05",
+                    "eventName": "3rd Avenue Cooper Square Fair"
+                },
+                {
+                    "closures": [
+                        {
+                            "streets": [
+                                {
+                                    "endLocation": "Lexington Avenue & 51st Street, New York, NY",
+                                    "startLocation": "Lexington Avenue & 42nd Street, New York, NY",
+                                    "startLat": 40.7514508,
+                                    "startLng": -73.97604869999999,
+                                    "endLat": 40.75713,
+                                    "endLng": -73.9719089
+                                }
+                            ],
+                            "type": "Miscellaneous"
+                        }
+                    ],
+                    "eventDate": "2025-07-06",
+                    "eventName": "Lexington Avenue Fair"
+                }
+            ]
+        };
+
         // 1. Initialize the map
-        const map = L.map('map').setView([40.758896, -73.985130], 14); // Zoomed in a bit more
+        const map = L.map('map').setView([40.758896, -73.985130], 14);
 
         // 2. Add a tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -50,52 +94,47 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // 3. MOCK DATA (Updated for Polylines)
-        // Note the new 'path' property, which is an array of [lat, lng] pairs.
-        const mockClosures = [
-            {
-                street: "Broadway",
-                crossStreets: "between 42nd St and 47th St",
-                closureTimes: "9 am to 11 pm",
-                reason: "Times Square Pedestrian Plaza",
-                // Path of Broadway from 42nd to 47th
-                path: [
-                    [40.7558, -73.9869], // Broadway & 42nd
-                    [40.7590, -73.9845]  // Broadway & 47th
-                ]
-            },
-            {
-                street: "St. Marks Place",
-                crossStreets: "between 2nd Ave and 3rd Ave",
-                closureTimes: "Weekends, 12 pm to 12 am",
-                reason: "Weekend Walk",
-                // Path of St. Marks between 2nd and 3rd Ave
-                path: [
-                    [40.7292, -73.9880], // St. Marks & 2nd Ave
-                    [40.7288, -73.9897]  // St. Marks & 3rd Ave
-                ]
-            }
-        ];
+        // 3. Process the closures data and add polylines to the map
+        closuresData.events.forEach(event => {
+            event.closures.forEach(closure => {
+                closure.streets.forEach(street => {
+                    // Create the polyline using the start and end coordinates
+                    const polyline = L.polyline([
+                        [street.startLat, street.startLng],
+                        [street.endLat, street.endLng]
+                    ], {
+                        color: 'red',
+                        weight: 5,
+                        opacity: 0.8
+                    }).addTo(map);
 
-        // 4. Process the mock data and add polylines to the map
-        mockClosures.forEach(closure => {
-            // Create the polyline using the path data
-            const polyline = L.polyline(closure.path, {
-                color: 'red',     // Color of the closure line
-                weight: 5,        // Thickness of the line
-                opacity: 0.8      // Opacity of the line
-            }).addTo(map);
+                    // Create the HTML content for the popup
+                    const popupContent = `
+                        <div class="popup-title">${event.eventName}</div>
+                        <b>From:</b> ${street.startLocation}<br>
+                        <b>To:</b> ${street.endLocation}<br>
+                        <b>Date:</b> ${event.eventDate}<br>
+                        <b>Type:</b> ${closure.type}
+                    `;
 
-            // Create the HTML content for the popup
-            const popupContent = `
-                <div class="popup-title">${closure.street}</div>
-                <b>Where:</b> ${closure.crossStreets}<br>
-                <b>When:</b> ${closure.closureTimes}<br>
-                <b>Reason:</b> ${closure.reason}
-            `;
-
-            polyline.bindPopup(popupContent);
+                    polyline.bindPopup(popupContent);
+                });
+            });
         });
+
+        // 4. Fit the map to show all closures
+        if (closuresData.events.length > 0) {
+            const bounds = L.latLngBounds();
+            closuresData.events.forEach(event => {
+                event.closures.forEach(closure => {
+                    closure.streets.forEach(street => {
+                        bounds.extend([street.startLat, street.startLng]);
+                        bounds.extend([street.endLat, street.endLng]);
+                    });
+                });
+            });
+            map.fitBounds(bounds, { padding: [20, 20] });
+        }
 
     </script>
 
