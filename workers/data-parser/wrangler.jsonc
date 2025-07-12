@@ -9,7 +9,7 @@
 	"compatibility_date": "2025-06-28",
 	"triggers": {
 		"crons": [
-			"07 10 * * FRI" // Every Friday at 10:07 AM UTC
+			"07 22 * * FRI" // Every Friday at 10:07 PM UTC
 		]
 	},
 	"observability": {

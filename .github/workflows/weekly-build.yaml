@@ -3,8 +3,8 @@ name: Update Traffic Data
 on:
   workflow_dispatch:
   schedule:
-    # Run every Friday at 8 AM ET (12 PM UTC)
-    - cron: '0 12 * * 5'
+    # Run every Friday at 20:27 UTC
+    - cron: '27 20 * * 5'
 
 permissions:
   contents: write
